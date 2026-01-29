@@ -1,0 +1,56 @@
+{
+  "name": "softnix-code-agent",
+  "version": "0.1.0",
+  "description": "AI Code Agent CLI - Local-first code assistant with privacy and security focus",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "sca": "./dist/cli.js"
+  },
+  "scripts": {
+    "dev": "tsx watch src/cli.ts",
+    "build": "tsup src/cli.ts src/index.ts --format esm --dts",
+    "start": "node dist/cli.js",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "ai",
+    "code-agent",
+    "cli",
+    "llm",
+    "local-first",
+    "privacy"
+  ],
+  "author": "Softnix",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/minimatch": "^6.0.0",
+    "@types/node": "^20.11.5",
+    "@typescript-eslint/eslint-plugin": "^6.19.1",
+    "@typescript-eslint/parser": "^6.19.1",
+    "eslint": "^8.56.0",
+    "prettier": "^3.2.4",
+    "tsup": "^8.0.1",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.1"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.3.0",
+    "chalk": "^5.3.0",
+    "commander": "^11.1.0",
+    "diff": "^5.1.0",
+    "inquirer": "^9.2.12",
+    "minimatch": "^10.1.1",
+    "ora": "^8.0.1",
+    "yaml": "^2.3.4"
+  }
+}
