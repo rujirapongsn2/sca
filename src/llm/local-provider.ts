@@ -122,13 +122,23 @@ export class LocalLLMProvider implements LLMProvider {
     const temperature = request.temperature ?? this.defaultTemperature;
     const maxTokens = request.max_tokens ?? this.defaultMaxTokens;
 
-    // Try Ollama format first
+    // If API key is present, use OpenAI format directly (cloud providers)
+    if (this.apiKey) {
+      try {
+        return await this.openaiComplete(request, temperature, maxTokens);
+      } catch (error) {
+        logger.error('OpenAI API call failed');
+        throw error;
+      }
+    }
+
+    // For local providers (no API key), try Ollama format first
     try {
       return await this.ollamaComplete(request, temperature, maxTokens);
     } catch (ollamaError) {
       logger.debug('Ollama format failed, trying OpenAI-compatible format');
 
-      // Fallback to OpenAI-compatible format
+      // Fallback to OpenAI-compatible format (for local servers like LM Studio)
       try {
         return await this.openaiComplete(request, temperature, maxTokens);
       } catch (openaiError) {
