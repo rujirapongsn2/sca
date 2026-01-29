@@ -7,6 +7,7 @@ import type {
   LLMProviderConfig,
   LLMCompletionRequest,
   LLMCompletionResponse,
+  TestConnectionResult,
 } from './types.js';
 import { logger } from '../utils/logger.js';
 
@@ -14,6 +15,7 @@ export class LocalLLMProvider implements LLMProvider {
   readonly name = 'LocalLLM';
   private endpoint: string;
   private modelName: string;
+  private apiKey?: string;
   private timeout: number;
   private defaultTemperature: number;
   private defaultMaxTokens: number;
@@ -21,6 +23,7 @@ export class LocalLLMProvider implements LLMProvider {
   constructor(config: LLMProviderConfig) {
     this.endpoint = config.endpoint;
     this.modelName = config.model_name || 'codellama';
+    this.apiKey = config.api_key;
     this.timeout = config.timeout || 60000; // 60 seconds default
     this.defaultTemperature = config.temperature ?? 0.2;
     this.defaultMaxTokens = config.max_tokens ?? 4096;
@@ -31,35 +34,84 @@ export class LocalLLMProvider implements LLMProvider {
   /**
    * Test connection to local LLM
    */
-  async testConnection(): Promise<boolean> {
+  async testConnection(): Promise<TestConnectionResult> {
     try {
       logger.debug('Testing connection to local LLM...');
 
-      // Try Ollama API format first
-      const response = await this.fetchWithTimeout(`${this.endpoint}/api/tags`, {
-        method: 'GET',
-      });
+      // Try Ollama API format first (no auth needed)
+      try {
+        const response = await this.fetchWithTimeout(`${this.endpoint}/api/tags`, {
+          method: 'GET',
+        });
 
-      if (response.ok) {
-        logger.debug('Connection successful (Ollama API)');
-        return true;
+        if (response.ok) {
+          logger.debug('Connection successful (Ollama API)');
+          const data = await response.json();
+          const models = data.models || [];
+          const currentModel = models.find((m: any) => m.name.includes(this.modelName));
+
+          return {
+            success: true,
+            modelInfo: currentModel ? {
+              name: currentModel.name,
+              size: currentModel.size ? `${Math.round(currentModel.size / 1024 / 1024 / 1024 * 10) / 10}GB` : undefined,
+            } : undefined,
+          };
+        }
+      } catch (ollamaError) {
+        logger.debug('Ollama API test failed, trying OpenAI-compatible format');
       }
 
-      // Try OpenAI-compatible format
-      const modelsResponse = await this.fetchWithTimeout(`${this.endpoint}/v1/models`, {
+      // Try OpenAI-compatible format (with auth if available)
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+
+      if (this.apiKey) {
+        headers['Authorization'] = `Bearer ${this.apiKey}`;
+      }
+
+      const modelsResponse = await this.fetchWithTimeout(`${this.endpoint}/models`, {
         method: 'GET',
+        headers,
       });
 
       if (modelsResponse.ok) {
         logger.debug('Connection successful (OpenAI-compatible API)');
-        return true;
+        const data = await modelsResponse.json();
+        const models = data.data || [];
+        const currentModel = models.find((m: any) => m.id === this.modelName || m.id.includes(this.modelName));
+
+        return {
+          success: true,
+          modelInfo: currentModel ? {
+            name: currentModel.id || this.modelName,
+          } : { name: this.modelName },
+        };
       }
 
-      logger.warn('Could not connect to LLM endpoint');
-      return false;
+      const errorText = await modelsResponse.text();
+      let errorMessage = `HTTP ${modelsResponse.status}`;
+
+      try {
+        const errorData = JSON.parse(errorText);
+        errorMessage = errorData.error?.message || errorData.message || errorMessage;
+      } catch {
+        errorMessage = errorText || errorMessage;
+      }
+
+      logger.warn('Could not connect to LLM endpoint:', errorMessage);
+      return {
+        success: false,
+        error: errorMessage,
+      };
     } catch (error) {
-      logger.error('Connection test failed:', error);
-      return false;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error('Connection test failed:', errorMessage);
+      return {
+        success: false,
+        error: errorMessage,
+      };
     }
   }
 
@@ -137,11 +189,17 @@ export class LocalLLMProvider implements LLMProvider {
     temperature: number,
     maxTokens: number
   ): Promise<LLMCompletionResponse> {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+
+    if (this.apiKey) {
+      headers['Authorization'] = `Bearer ${this.apiKey}`;
+    }
+
     const response = await this.fetchWithTimeout(`${this.endpoint}/v1/chat/completions`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({
         model: this.modelName,
         messages: request.messages,

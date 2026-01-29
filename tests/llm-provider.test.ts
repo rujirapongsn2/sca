@@ -41,8 +41,8 @@ describe('LLMProvider', () => {
         json: async () => ({ models: [] }),
       });
 
-      const connected = await provider.testConnection();
-      expect(connected).toBe(true);
+      const result = await provider.testConnection();
+      expect(result.success).toBe(true);
       expect(global.fetch).toHaveBeenCalledWith(
         'http://localhost:11434/api/tags',
         expect.any(Object)
@@ -54,14 +54,15 @@ describe('LLMProvider', () => {
 
       // Mock failed Ollama, successful OpenAI
       (global.fetch as any)
-        .mockResolvedValueOnce({ ok: false }) // Ollama fails
+        .mockRejectedValueOnce(new Error('Ollama failed')) // Ollama throws
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => ({ data: [] }),
+          json: async () => ({ data: [{ id: 'codellama' }] }),
         }); // OpenAI succeeds
 
-      const connected = await provider.testConnection();
-      expect(connected).toBe(true);
+      const result = await provider.testConnection();
+      expect(result.success).toBe(true);
+      expect(result.modelInfo?.name).toBe('codellama');
     });
 
     it('should fail connection test when both APIs fail', async () => {
@@ -69,11 +70,16 @@ describe('LLMProvider', () => {
 
       // Mock both failing
       (global.fetch as any)
-        .mockResolvedValueOnce({ ok: false })
-        .mockResolvedValueOnce({ ok: false });
+        .mockRejectedValueOnce(new Error('Ollama failed'))
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 401,
+          text: async () => 'Unauthorized',
+        });
 
-      const connected = await provider.testConnection();
-      expect(connected).toBe(false);
+      const result = await provider.testConnection();
+      expect(result.success).toBe(false);
+      expect(result.error).toBeTruthy();
     });
 
     it('should complete with Ollama format', async () => {

@@ -75,9 +75,10 @@ async function testConnection(config: ProviderConfig): Promise<boolean> {
     console.log(chalk.blue('\n🔌 Testing connection...'));
 
     const provider = new LocalLLMProvider({
+      provider: config.apiKey ? 'external' : 'local',
       endpoint: config.endpoint,
-      model: config.model,
-      apiKey: config.apiKey,
+      model_name: config.model,
+      api_key: config.apiKey,
     });
 
     const result = await provider.testConnection();

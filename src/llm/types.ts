@@ -26,6 +26,16 @@ export interface LLMCompletionResponse {
   finish_reason?: string;
 }
 
+export interface TestConnectionResult {
+  success: boolean;
+  error?: string;
+  modelInfo?: {
+    name?: string;
+    size?: string;
+    version?: string;
+  };
+}
+
 export interface LLMProvider {
   /**
    * Provider name
@@ -35,7 +45,7 @@ export interface LLMProvider {
   /**
    * Test connection to LLM
    */
-  testConnection(): Promise<boolean>;
+  testConnection(): Promise<TestConnectionResult>;
 
   /**
    * Generate completion

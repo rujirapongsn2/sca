@@ -28,21 +28,35 @@ export async function testLlmCommand(): Promise<void> {
     const provider = LLMProviderFactory.fromModelConfig(modelConfig);
 
     // Test connection
-    const connected = await provider.testConnection();
+    const result = await provider.testConnection();
 
-    if (!connected) {
+    if (!result.success) {
       spinner.fail('Connection failed');
       logger.log('');
       logger.error('Could not connect to LLM endpoint.');
+      if (result.error) {
+        logger.error(`Error: ${result.error}`);
+      }
       logger.log('');
       logger.log('Troubleshooting:');
       logger.log(`  1. Check if LLM server is running at ${chalk.cyan(modelConfig.endpoint)}`);
       logger.log('  2. For Ollama, try: ollama serve');
-      logger.log('  3. Verify endpoint in .sca/config.yml');
+      logger.log('  3. For OpenAI/Claude, verify your API key');
+      logger.log('  4. Verify endpoint in .sca/config.yml');
       process.exit(1);
     }
 
     spinner.succeed('Connection successful');
+
+    // Show model info if available
+    if (result.modelInfo) {
+      if (result.modelInfo.name) {
+        logger.log(`  Model: ${chalk.cyan(result.modelInfo.name)}`);
+      }
+      if (result.modelInfo.size) {
+        logger.log(`  Size: ${chalk.cyan(result.modelInfo.size)}`);
+      }
+    }
     logger.log('');
 
     // Test completion
