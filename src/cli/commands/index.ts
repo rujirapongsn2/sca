@@ -4,6 +4,7 @@
 
 export { initCommand } from './init.js';
 export { scanCommand } from './scan.js';
+export { connectCommand } from './connect.js';
 export { testLlmCommand } from './test-llm.js';
 export { askCommand } from './ask.js';
 export { runCommand } from './run.js';

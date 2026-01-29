@@ -80,13 +80,36 @@ model:
   model_name: 'codellama'
 ```
 
-### 3. Test LLM Connection
+### 3. Connect to LLM Provider (Interactive)
+
+Use the interactive setup to connect to your LLM provider:
+
+```bash
+sca connect
+```
+
+This will guide you through:
+- Selecting a provider (Ollama, LM Studio, OpenAI, Claude, etc.)
+- Configuring endpoint and model
+- Testing the connection
+- Saving configuration
+
+Alternatively, manually edit `.sca/config.yml`:
+
+```yaml
+model:
+  type: local
+  endpoint: 'http://localhost:11434'
+  model_name: 'codellama'
+```
+
+### 4. Test LLM Connection
 
 ```bash
 sca test-llm
 ```
 
-### 4. Start using SCA
+### 5. Start using SCA
 
 ```bash
 # Scan repository
@@ -111,6 +134,9 @@ sca git suggest
 
 - **`sca init`** - Initialize SCA in current workspace
 - **`sca scan`** - Scan and analyze repository structure
+- **`sca connect`** - Interactive LLM provider connection setup
+  - Supports Ollama, LM Studio, vLLM, OpenAI, Claude, Together AI, and custom OpenAI-compatible endpoints
+  - Auto-tests connection and saves configuration
 - **`sca test-llm`** - Test LLM connection and configuration
 
 ### Agent Commands

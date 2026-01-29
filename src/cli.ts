@@ -9,7 +9,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { getVersion } from './utils/version.js';
 import { logger } from './utils/logger.js';
-import { initCommand, scanCommand, testLlmCommand, askCommand, runCommand, memoryCommand, gitCommand } from './cli/commands/index.js';
+import { initCommand, scanCommand, connectCommand, testLlmCommand, askCommand, runCommand, memoryCommand, gitCommand } from './cli/commands/index.js';
 
 const program = new Command();
 
@@ -56,6 +56,9 @@ program
       process.exit(1);
     }
   });
+
+// Connect command
+program.addCommand(connectCommand);
 
 // Test LLM command
 program
@@ -138,6 +141,7 @@ program
     logger.log('Available commands:');
     logger.log(`  ${chalk.cyan('sca init')}             - Initialize SCA in current workspace`);
     logger.log(`  ${chalk.cyan('sca scan')}             - Scan and analyze repository`);
+    logger.log(`  ${chalk.cyan('sca connect')}          - Connect to LLM provider (interactive)`);
     logger.log(`  ${chalk.cyan('sca test-llm')}         - Test LLM connection`);
     logger.log(`  ${chalk.cyan('sca ask "<question>"')} - Ask the agent a question`);
     logger.log(`  ${chalk.cyan('sca run <preset>')}     - Run command preset (test/lint/build)`);
